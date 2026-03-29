@@ -1,0 +1,179 @@
+1. DDL (CREATE / ALTER / DROP)
+🔹 Create Table
+CREATE TABLE table_name (
+    col1 NUMBER PRIMARY KEY,
+    col2 VARCHAR2(50) NOT NULL,
+    col3 NUMBER UNIQUE,
+    col4 NUMBER CHECK (col4 > 0),
+    col5 DATE DEFAULT SYSDATE,
+    col6 NUMBER,
+    FOREIGN KEY (col6) REFERENCES other_table(col_id)
+);
+🔹 Alter Table
+-- Add column
+ALTER TABLE table_name ADD column_name VARCHAR2(50);
+
+-- Modify column
+ALTER TABLE table_name MODIFY column_name NUMBER(10,2);
+
+-- Add constraint
+ALTER TABLE table_name ADD CONSTRAINT c1 UNIQUE(col1);
+
+-- Add primary key
+ALTER TABLE table_name ADD PRIMARY KEY(col1);
+
+-- Add foreign key
+ALTER TABLE table_name 
+ADD FOREIGN KEY (col1) REFERENCES other_table(col1);
+🔹 Rename
+ALTER TABLE old_name RENAME TO new_name;
+ALTER TABLE table_name RENAME COLUMN old TO new;
+🔹 Delete Structure
+TRUNCATE TABLE table_name; -- removes data
+DROP TABLE table_name;     -- deletes table
+
+2. INSERT
+INSERT INTO table_name VALUES (1, 'Ali', 5000);
+
+INSERT INTO table_name (col1, col2)
+VALUES (1, 'Sara');
+
+3. BASIC QUERIES (LAB 4)
+🔹 Conditions
+WHERE salary > 5000
+WHERE salary BETWEEN 4000 AND 8000
+WHERE department_id IN (10,20,30)
+WHERE first_name LIKE 'A%'
+WHERE first_name LIKE '%an%'
+🔹 Sorting + Limiting
+ORDER BY salary DESC;
+
+-- First 5
+WHERE ROWNUM <= 5;
+
+-- Next 5
+OFFSET 5 ROWS FETCH NEXT 5 ROWS ONLY;
+🔹 String + Formatting
+first_name || ' ' || last_name
+
+UPPER(name)
+TRIM(name)
+
+REPLACE(email,'old','new')
+
+TO_CHAR(ROUND(salary,2),'99,999.99')
+🔹 Dates (IMPORTANT)
+hire_date BETWEEN 
+TO_DATE('01-JAN-2010','DD-MON-YYYY')
+AND TO_DATE('31-DEC-2015','DD-MON-YYYY')
+
+4. SUBQUERIES (LAB 6)
+🔹 Basic
+WHERE salary > (SELECT AVG(salary) FROM employees)
+🔹 Correlated
+WHERE salary > (
+    SELECT AVG(salary)
+    FROM employees
+    WHERE department_id = e.department_id
+)
+🔹 IN / NOT IN
+WHERE salary IN (
+    SELECT MIN(salary)
+    FROM employees
+    GROUP BY department_id
+);
+
+WHERE salary NOT IN (
+    SELECT salary FROM employees WHERE department_id = 50
+);
+🔹 EXISTS / NOT EXISTS
+WHERE EXISTS (
+    SELECT 1 FROM job_history j
+    WHERE j.employee_id = e.employee_id
+);
+
+WHERE NOT EXISTS (
+    SELECT 1 FROM job_history j
+    WHERE j.employee_id = e.employee_id
+);
+🔹 ALL / ANY
+WHERE salary > ALL (
+    SELECT salary FROM employees WHERE department_id = 30
+);
+🔹 Median / Aggregate Logic
+SELECT MEDIAN(salary) FROM employees;
+🔹 Inline View
+SELECT *
+FROM (
+    SELECT employee_id, salary FROM employees
+)
+WHERE salary > (SELECT AVG(salary) FROM employees);
+
+5. JOINS (LAB 7)
+🔹 Inner Join
+FROM employees e
+JOIN departments d
+ON e.department_id = d.department_id
+🔹 Left Join
+FROM employees e
+LEFT JOIN departments d
+ON e.department_id = d.department_id
+🔹 Right Join
+FROM employees e
+RIGHT JOIN departments d
+ON e.department_id = d.department_id
+🔹 Full Join
+FROM employees e
+FULL OUTER JOIN departments d
+ON e.department_id = d.department_id
+🔹 Cross Join
+FROM employees
+CROSS JOIN departments
+🔹 Self Join
+FROM employees e
+JOIN employees m
+ON e.manager_id = m.employee_id
+
+6. SET OPERATORS
+UNION       -- removes duplicates
+UNION ALL   -- keeps duplicates
+INTERSECT   -- common rows
+MINUS       -- difference
+
+7. VIEWS
+🔹 Create
+CREATE OR REPLACE VIEW v1 AS
+SELECT first_name, salary FROM employees;
+🔹 With Condition
+CREATE VIEW v2 AS
+SELECT * FROM employees
+WHERE salary > 8000;
+🔹 Complex View
+CREATE VIEW v3 AS
+SELECT e.first_name, d.department_name
+FROM employees e
+JOIN departments d
+ON e.department_id = d.department_id;
+🔹 Read Only
+CREATE VIEW v4 AS
+SELECT * FROM departments
+WITH READ ONLY;
+🔹 Check Option
+CREATE VIEW v5 AS
+SELECT * FROM employees
+WHERE department_id = 50
+WITH CHECK OPTION;
+🔹 Drop
+DROP VIEW view_name;
+
+If you see something like:
+“Employees who… (5 conditions)”
+
+SELECT ...
+FROM employees e
+JOIN ...
+WHERE condition1
+AND condition2 (subquery)
+AND EXISTS (...)
+AND salary > ALL (...)
+AND department_id IN (...)

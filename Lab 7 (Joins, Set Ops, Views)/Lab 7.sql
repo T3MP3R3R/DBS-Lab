@@ -1,213 +1,113 @@
-/*CL2006 - DATABASE SYSTEMS - LAB 7 (PREDICTED) - BAI-4A - 24K-0017*/
+/*CL2006 - DATABASE SYSTEMS - LAB 7 - BAI-4A - 24K-0017*/
 
 -- Lab 7 - START
 
--- Q1) Use HR Schema (JOINS)
-/*A. Display employee full name, department name, and city they work in.
-B. Display employees along with their job title and salary using INNER JOIN.
-C. Display all employees and their departments (include those without department).
-D. Display all departments and employees (include departments with no employees).
-E. Display employee name and their manager name using SELF JOIN.*/
+-- Q1)
 
 -- a)
-SELECT e.first_name || ' ' || e.last_name AS full_name,
-       d.department_name,
-       l.city
-FROM employees e
-JOIN departments d ON e.department_id = d.department_id
-JOIN locations l ON d.location_id = l.location_id;
+SELECT e.FIRST_NAME, d.DEPARTMENT_NAME
+FROM EMPLOYEES e
+INNER JOIN DEPARTMENTS d
+ON e.DEPARTMENT_ID = d.DEPARTMENT_ID;
 
 -- b)
-SELECT e.first_name, j.job_title, e.salary
-FROM employees e
-INNER JOIN jobs j ON e.job_id = j.job_id;
+SELECT e.FIRST_NAME, j.JOB_TITLE
+FROM EMPLOYEES e
+CROSS JOIN JOBS j;
 
 -- c)
-SELECT e.first_name, d.department_name
-FROM employees e
-LEFT OUTER JOIN departments d
-ON e.department_id = d.department_id;
+SELECT e.FIRST_NAME, d.DEPARTMENT_NAME
+FROM EMPLOYEES e
+LEFT OUTER JOIN DEPARTMENTS d
+ON e.DEPARTMENT_ID = d.DEPARTMENT_ID;
 
 -- d)
-SELECT e.first_name, d.department_name
-FROM employees e
-RIGHT OUTER JOIN departments d
-ON e.department_id = d.department_id;
+SELECT e.FIRST_NAME, d.DEPARTMENT_NAME
+FROM EMPLOYEES e
+LEFT OUTER JOIN DEPARTMENTS d
+ON e.DEPARTMENT_ID = d.DEPARTMENT_ID;
 
--- e)
-SELECT e.first_name AS employee,
-       m.first_name AS manager
-FROM employees e
-JOIN employees m
-ON e.manager_id = m.employee_id;
-
--- Q2) Advanced JOINS + CONDITIONS
-
-/*A. Display employees who work in the same city as their manager.
-B. Display employees whose salary is greater than the average salary of their department.
-C. Display employees working in departments located in 'Seattle'.
-D. Display departments where no employee is assigned.
-E. Display employees hired before their manager.*/
+-- Q2)
 
 -- a)
-SELECT e.first_name
-FROM employees e
-JOIN employees m ON e.manager_id = m.employee_id
-JOIN departments d1 ON e.department_id = d1.department_id
-JOIN departments d2 ON m.department_id = d2.department_id
-WHERE d1.location_id = d2.location_id;
+SELECT d.DEPARTMENT_NAME, e.FIRST_NAME
+FROM EMPLOYEES e
+RIGHT OUTER JOIN DEPARTMENTS d
+ON e.DEPARTMENT_ID = d.DEPARTMENT_ID;
 
 -- b)
-SELECT *
-FROM employees e
-WHERE salary > (
-    SELECT AVG(salary)
-    FROM employees
-    WHERE department_id = e.department_id
-);
-
--- c)
-SELECT e.first_name
-FROM employees e
-JOIN departments d ON e.department_id = d.department_id
-JOIN locations l ON d.location_id = l.location_id
-WHERE l.city = 'Seattle';
-
--- d)
-SELECT *
-FROM departments d
-WHERE NOT EXISTS (
-    SELECT 1 FROM employees e
-    WHERE e.department_id = d.department_id
-);
-
--- e)
-SELECT e.first_name
-FROM employees e
-JOIN employees m ON e.manager_id = m.employee_id
-WHERE e.hire_date < m.hire_date;
-
--- Q3) SET OPS
-/*A. Display all employee IDs from employees and job_history (remove duplicates).
-B. Display all employee IDs including duplicates.
-C. Display employees who changed jobs.
-D. Display employees who never changed jobs.*/
-
--- a)
-SELECT employee_id FROM employees
-UNION
-SELECT employee_id FROM job_history;
-
--- b)
-SELECT employee_id FROM employees
-UNION ALL
-SELECT employee_id FROM job_history;
-
--- c)
-SELECT employee_id FROM employees
+SELECT EMPLOYEE_ID FROM EMPLOYEES
 INTERSECT
-SELECT employee_id FROM job_history;
-
--- d)
-SELECT employee_id FROM employees
-MINUS
-SELECT employee_id FROM job_history;
-
--- Q4) VIEWS
-/*A. Create a simple view showing employee name and salary.
-B. Create a view showing employees earning more than 8000.
-C. Create a complex view showing employee, department, and job title.
-D. Create a read-only view for departments.
-E. Modify an existing view to include last_name.*/
-
--- a)
-CREATE OR REPLACE VIEW emp_view AS
-SELECT first_name, salary
-FROM employees;
-
--- b)
-CREATE OR REPLACE VIEW high_salary_view AS
-SELECT employee_id, first_name, salary
-FROM employees
-WHERE salary > 8000;
+SELECT EMPLOYEE_ID FROM JOB_HISTORY;
 
 -- c)
-CREATE OR REPLACE VIEW emp_full_view AS
-SELECT e.first_name, d.department_name, j.job_title
-FROM employees e
-JOIN departments d ON e.department_id = d.department_id
-JOIN jobs j ON e.job_id = j.job_id;
+SELECT EMPLOYEE_ID FROM EMPLOYEES
+MINUS
+SELECT EMPLOYEE_ID FROM JOB_HISTORY;
 
--- d)
-CREATE OR REPLACE VIEW dept_view AS
-SELECT department_id, department_name
-FROM departments
-WITH READ ONLY;
+-- Q3)
 
--- e)
-CREATE OR REPLACE VIEW emp_view AS
-SELECT first_name, last_name, salary
-FROM employees;
+CREATE VIEW EMP_VIEW AS
+SELECT e.FIRST_NAME || ' ' || e.LAST_NAME AS FULL_NAME,
+       d.DEPARTMENT_NAME,
+       j.JOB_TITLE
+FROM EMPLOYEES e
+JOIN DEPARTMENTS d ON e.DEPARTMENT_ID = d.DEPARTMENT_ID
+JOIN JOBS j ON e.JOB_ID = j.JOB_ID;
 
--- Q5) MIXED (JOINS + SUBQUERY + VIEWS)
-/*Display employees who:
-- Work in departments where average salary > company average
-- Earn more than their department average
-- Exist in job_history
-- Show their department name and job title*/
+-- Q4) 
 
-SELECT e.first_name, d.department_name, j.job_title
-FROM employees e
-JOIN departments d ON e.department_id = d.department_id
-JOIN jobs j ON e.job_id = j.job_id
-WHERE e.department_id IN (
-    SELECT department_id
-    FROM employees
-    GROUP BY department_id
-    HAVING AVG(salary) > (SELECT AVG(salary) FROM employees)
-)
-AND e.salary > (
-    SELECT AVG(salary)
-    FROM employees
-    WHERE department_id = e.department_id
-)
-AND EXISTS (
-    SELECT 1 FROM job_history jh
-    WHERE jh.employee_id = e.employee_id
-);
+CREATE VIEW EMP_REPORT AS
+SELECT e.EMPLOYEE_ID,
+       e.FIRST_NAME || ' ' || e.LAST_NAME AS FULL_NAME,
+       d.DEPARTMENT_NAME,
+       j.JOB_TITLE,
+       e.SALARY
+FROM EMPLOYEES e
+JOIN DEPARTMENTS d ON e.DEPARTMENT_ID = d.DEPARTMENT_ID
+JOIN JOBS j ON e.JOB_ID = j.JOB_ID
+WHERE e.SALARY > (SELECT AVG(SALARY) FROM EMPLOYEES)
+ORDER BY e.SALARY DESC;
 
--- Q6) INLINE VIEW
-/*Display employees whose salary is greater than average salary using inline view*/
+-- Q5)
 
+-- a)
+CREATE VIEW DEPT50_VIEW AS
 SELECT *
-FROM (
-    SELECT employee_id, first_name, salary
-    FROM employees
-)
-WHERE salary > (SELECT AVG(salary) FROM employees);
+FROM EMPLOYEES
+WHERE DEPARTMENT_ID = 50
+WITH CHECK OPTION;
 
--- Q7) 
-/*Display employees who:
-- Are not managers
-- Work in departments with more than 3 employees
-- Earn more than ALL employees in department 30
-- Show employee name, department name, and city*/
+-- b)
+SELECT EMPLOYEE_ID FROM EMPLOYEES
+UNION
+SELECT EMPLOYEE_ID FROM JOB_HISTORY;
 
-SELECT e.first_name, d.department_name, l.city
-FROM employees e
-JOIN departments d ON e.department_id = d.department_id
-JOIN locations l ON d.location_id = l.location_id
-WHERE e.employee_id NOT IN (
-    SELECT manager_id FROM employees WHERE manager_id IS NOT NULL
-)
-AND e.department_id IN (
-    SELECT department_id
-    FROM employees
-    GROUP BY department_id
-    HAVING COUNT(*) > 3
-)
-AND e.salary > ALL (
-    SELECT salary FROM employees WHERE department_id = 30
-);
+-- Q6)
+
+CREATE VIEW HR_ANALYTICS AS
+SELECT e.EMPLOYEE_ID,
+       e.FIRST_NAME || ' ' || e.LAST_NAME AS FULL_NAME,
+       d.DEPARTMENT_NAME,
+       j.JOB_TITLE,
+       e.SALARY
+FROM EMPLOYEES e
+JOIN DEPARTMENTS d ON e.DEPARTMENT_ID = d.DEPARTMENT_ID
+JOIN JOBS j ON e.JOB_ID = j.JOB_ID
+WHERE e.SALARY > (SELECT AVG(SALARY) FROM EMPLOYEES);
+
+-- Q7)
+
+-- a)
+CREATE VIEW SECURE_EMP AS
+SELECT EMPLOYEE_ID, FIRST_NAME, LAST_NAME, DEPARTMENT_ID, SALARY
+FROM EMPLOYEES
+WHERE DEPARTMENT_ID = 10
+WITH CHECK OPTION;
+
+-- b)
+SELECT EMPLOYEE_ID FROM EMPLOYEES
+UNION
+SELECT EMPLOYEE_ID FROM JOB_HISTORY;
 
 -- Lab 7 - END
